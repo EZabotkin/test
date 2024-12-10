@@ -1,0 +1,223 @@
+openapi: 3.0.3
+info:
+  title: User and Partner API
+  version: 1.0.0
+  description: |
+    API to manage users and partners. Includes operations to fetch user data and manage service plans, ensuring configuration flexibility per partner.
+
+paths:
+  /api/external/user:
+    get:
+      summary: Get user information
+      description: |
+        Retrieves user information. Supports optional parameters for filtering and pagination.
+      parameters:
+        - name: user_id
+          in: query
+          description: Unique user identifier.
+          required: false
+          schema:
+            type: string
+            minLength: 7
+            maxLength: 7
+          example: "3453255"
+        - name: from
+          in: query
+          description: Pagination start timestamp.
+          required: false
+          schema:
+            type: integer
+          example: 1633046400000000000
+        - name: to
+          in: query
+          description: Pagination end timestamp.
+          required: false
+          schema:
+            type: integer
+          example: 1633132800000000000
+        - name: limit
+          in: query
+          description: Limit to records returned.
+          required: false
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 1000
+            default: 1000
+          example: 100
+        - name: provider_id
+          in: query
+          description: Unique identifier of the partner a user is bound to.
+          required: false
+          schema:
+            type: string
+            minLength: 4
+            maxLength: 4
+          example: "2323"
+      responses:
+        '200':
+          description: Successful response with user details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    description: Unique user identifier.
+                    example: "3453255"
+                  provider_id:
+                    type: string
+                    description: Unique identifier of the partner a user is bound to.
+                    example: "2323"
+                  status:
+                    type: string
+                    description: User service state.
+                    enum: [active, inactive, idle]
+                    example: "active"
+                  type:
+                    type: string
+                    description: User type.
+                    enum: [basic, guest, company, advanced, admin]
+                    example: "basic"
+                  zone:
+                    type: string
+                    description: Region of residence (ISO 3166 Alpha-2 code).
+                    example: "us"
+
+  /api/partner:
+    get:
+      summary: Get partner information
+      description: |
+        Retrieves partner information. The provider ID is required.
+      parameters:
+        - name: provider_id
+          in: query
+          description: Unique partner identifier.
+          required: true
+          schema:
+            type: string
+            minLength: 4
+            maxLength: 4
+          example: "2323"
+        - name: status
+          in: query
+          description: Partner operation state.
+          required: false
+          schema:
+            type: string
+            enum: [active, stopped]
+          example: "active"
+      responses:
+        '200':
+          description: Successful response with partner details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  provider_id:
+                    type: string
+                    description: Unique partner identifier.
+                    example: "2323"
+                  status:
+                    type: string
+                    description: Partner operation state.
+                    enum: [active, stopped]
+                    example: "active"
+
+  /api/plans:
+    get:
+      summary: Get service plans
+      description: |
+        Retrieves the list of service plans available to the user based on their provider.
+      parameters:
+        - name: user_type
+          in: query
+          description: Comma-separated user types to filter plans.
+          required: false
+          schema:
+            type: string
+          example: "basic,advanced"
+        - name: provider_id
+          in: query
+          description: Unique partner identifier.
+          required: true
+          schema:
+            type: string
+            minLength: 4
+            maxLength: 4
+          example: "2323"
+      responses:
+        '200':
+          description: Successful response with available plans.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plans:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        plan_id:
+                          type: string
+                          description: Unique plan identifier.
+                          example: "plan123"
+                        name:
+                          type: string
+                          description: Name of the plan.
+                          example: "Premium Plan"
+                        user_types:
+                          type: array
+                          items:
+                            type: string
+                          description: Applicable user types for the plan.
+                          example: ["basic", "advanced"]
+    post:
+      summary: Create a new service plan
+      description: |
+        Creates a new service plan. Requires Basic authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the plan.
+                  example: "New Plan"
+                user_types:
+                  type: array
+                  items:
+                    type: string
+                  description: Applicable user types.
+                  example: ["basic", "company"]
+                provider_id:
+                  type: string
+                  description: Partner ID associated with the plan.
+                  example: "2323"
+      responses:
+        '201':
+          description: Plan created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan_id:
+                    type: string
+                    description: Unique identifier of the created plan.
+                    example: "plan456"
+                  name:
+                    type: string
+                    description: Name of the plan.
+                    example: "New Plan"
+
+securitySchemes:
+  BasicAuth:
+    type: http
+    scheme: basic
